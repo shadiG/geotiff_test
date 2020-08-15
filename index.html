@@ -1,30 +1,231 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <script src="plotty.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
-</head>
-<body>
-  <canvas id="canvas" width=100 height=100></canvas>
-  <input type="file" id="file">
-<script>
-  const input = document.getElementById('file');
-  input.onchange = async function() {
-    const tiff = await GeoTIFF.fromBlob(input.files[0]);
-    const image = await tiff.getImage();
-    const data = await image.readRasters();
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
+  <link rel="stylesheet" href="dist/jquery-spinner.min.css" />
+  <script src="dist/jquery-spinner.min.js"></script>
 
-    const canvas = document.getElementById("plot");
-    plot = new plotty.plot({
-  canvas: document.getElementById("canvas"),
-  data: data[0],
-  width: image.getWidth(),
-  height: image.getHeight(),
-  domain: [-1, 1], colorScale: 'viridis'
-});
-plot.render();
-  }
-</script>
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <a class="navbar-brand" href="#">geotiff.js with plotty</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  </nav>
+  <div class="row" style="margin: 15px;">
+    <div class="col-md-4" style="margin-top: 100px;">
+      <form id="form" action="#"  style="margin-left: 20px;">
+        <div class="row">
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <span class="input-group-text">Upload</span>
+            </div>
+            <div class="custom-file">
+              <input type="file" class="custom-file-input" id="file">
+              <label class="custom-file-label" for="inputGroupFile01">Choose..</label>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <label class="input-group-text" for="inputGroupSelect01">Plotty Color Scale</label>
+            </div>
+            <select class="custom-select" id="colorScale">
+              <option selected value='viridis'>viridis</option>
+              <option value="inferno">inferno</option>
+              <option value="turbo">turbo</option>
+              <option value="rainbow">rainbow</option>
+              <option value='hot'>hot</option>
+              <option value="cool">cool</option>
+              <option value="spring">spring</option>
+              <option value="summer">summer</option>
+              <option value='autumn'>autumn</option>
+              <option value="winter">winter</option>
+              <option value="bone">bone</option>
+              <option value="copper">copper</option>
+              <option value="greys">greys</option>
+              <option value="yignbu">yignbu</option>
+              <option value="greens">greens</option>
+              <option value='yiorrd'>yiorrd</option>
+              <option value="bluered">bluered</option>
+              <option value="rdbu">rdbu</option>
+              <option value="picnic">picnic</option>
+              <option value="portland">portland</option>
+              <option value="blackbody">blackbody</option>
+              <option value="earth">earth</option>
+              <option value='electric'>electric</option>
+              <option value="magma">magma</option>
+              <option value="plasma">plasma</option>
+            </select>
+          </div>
+        </div>
+        <p class="lead">
+          If we are only interested in a specific region of the image, the window option can be used to limit reading in that bounding box. Note: the bounding box is in 'image coordinates' not geographical ones:        </p>
+        <div class="row">
+          <div class="col-sm">
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">Top</span>
+              </div>
+              <input type="number" id="top" class="form-control" aria-label="top" aria-describedby="basic-addon1">
+            </div>
+          </div>
+          <div class="col-sm">
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">Bottom</span>
+              </div>
+              <input type="number" id="bottom" class="form-control" aria-label="bottom" aria-describedby="basic-addon1">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-sm">
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">Left</span>
+              </div>
+              <input type="number" id="left" class="form-control" aria-label="left" aria-describedby="basic-addon1">
+            </div>
+          </div>
+          <div class="col-sm">
+            <div class="input-group mb-3">
+              <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">Right</span>
+              </div>
+              <input type="number" id="right" class="form-control" aria-label="right" aria-describedby="basic-addon1">
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <button type="submit" class="btn btn-primary">Submit</button>
+
+        </div>
+
+      </form>
+    </div>
+    <div class="col-md-8">
+      <div class="container">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="container"></div>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"
+    integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    crossorigin="anonymous"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      var spinner = new jQuerySpinner({
+        parentId: 'container',
+        duration: 1
+      });
+
+      var input = document.getElementById('file');
+      var colorScale = document.getElementById('colorScale');
+      var top = document.getElementById('top');
+      var bottom = document.getElementById('bottom');
+      var left = document.getElementById('left');
+      var right = document.getElementById('right');
+      var tiff = null;
+      var image = null;
+      var data = null;
+      var old_top = null;
+      var old_bottom = null;
+      var old_left = null;
+      var old_right = null;
+      var appliedScale = false;
+      input.onchange = async function () {
+        spinner.show();
+        tiff = await GeoTIFF.fromBlob(input.files[0]);
+        image = await tiff.getImage();
+        await getScaledRaster();
+
+      }
+
+      colorScale.onchange = async function () {
+        if (data != null) loadFile();
+      }
+
+      async function loadFile() {
+        await getScaledRaster();
+        const canvas = document.getElementById("canvas");
+
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+
+        plot = new plotty.plot({
+          canvas: canvas,
+          data: data[0],
+          width: image.getWidth(),
+          height: image.getHeight(),
+          domain: [-1, 1], colorScale: colorScale.value
+        });
+
+        plot.render();
+
+        return false;
+
+      }
+      document.getElementById('form').onsubmit =  function(){
+         loadFile();
+        return false;
+      }
+
+      async function getScaledRaster() {
+      if (tiff != null && image != null) {
+        if (top.value != '' && bottom.value != '' && left.value != '' && right.value != '') {
+          if (old_top == null && old_bottom == null && old_left == null && old_right == null) {
+            data = await image.readRasters({ window: [left, top, right, bottom] });
+            old_top = top.value;
+            old_bottom = bottom.value;
+            old_left = left.value;
+            old_right = right.value;
+              spinner.hide();
+            appliedScale = true;
+          } else {
+            if (old_top != top.value || old_bottom != bottom.value || old_left != left.value || old_right != right.value) {
+              data = await image.readRasters({ window: [left, top, right, bottom] });
+              old_top = top.value;
+              old_bottom = bottom.value;
+              old_left = left.value;
+              old_right = right.value;
+              spinner.hide();
+              
+            }
+          }
+
+        } else {
+          data = await image.readRasters();
+          spinner.hide();
+        }
+      } else {
+        spinner.hide();
+      }
+
+    }
+    });
+
+   
+
+  </script>
 </body>
+
 </html>
